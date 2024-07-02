@@ -8,18 +8,7 @@ The records include details such as mobile number, name, gender, date of birth, 
 from constants import *
 from utilis.utility import *
 from app.email.email_constants import *
-import boto3
-import logging as log
 
-dynamodb = boto3.resource('dynamodb', region_name='us-east-1')  # Update with your desired AWS region
-
-# Sample constants and initializations
-ADMINS = ["admin1", "admin2"]
-USERS = ["user1", "user2"]
-REGISTERED_NUMBERS = []
-
-# Define DynamoDB table
-table_name = 'UserRecords'  # Update with your DynamoDB table name
 
 def create_user(name, role=None):
     """
@@ -65,39 +54,35 @@ def create_user(name, role=None):
 
 
 # POST
-def create_new_record():
+def create_new_record(record):
     """
-    This function is for inserting a new record manually input by the user.
+    This is function is for inserting new record
+    :param record: dict
+    :return: DATA : dict
     """
-    log.info('create_new_record function started...')
+    log.info(f'create_new_record function started...')
     try:
-        mobile = input("Enter mobile number: ")
-        name = input("Enter name: ")
-        gender = input("Enter gender: ")
-        dob = input("Enter date of birth (YYYY-MM-DD): ")
-        company = input("Enter company: ")
-
-        record = {"mobile": mobile, "name": name, "gender": gender, "dob": dob, "company": company}
-
-        # Validate record format
-        if is_valid_record(record):
-            # Ensure to append to global DATA variable
-            global DATA
-            REGISTERED_NUMBERS.append(record["mobile"])
-            DATA["records"].append(record)
-            log.info(f'Record added successfully: {record}')
-            return f'Saved record for {record["mobile"]} is = {DATA}'
+        if isinstance(record, dict):
+            if "mobile" in record:
+                log.info(f'{record["mobile"]} --> create_new_record function started...')
+                if is_valid_record(record):
+                    REGISTERED_NUMBERS.append(record["mobile"])
+                    DATA["records"].append(record)
+                    log.info(f'Record added successfully :- {DATA}')
+                    return f'Saved record for {record["mobile"]} is = {DATA}'
+            else:
+                log.error(f'In dict record the key "mobile" is not there')
+                raise Exception(f'In dict record the key "mobile" is not there')
         else:
-            log.error('Invalid record format')
-            raise ValueError('Invalid record format')
-    
-    except ValueError as err:
-        print(err)
-    
+            log.error(f'The entered DATA records is not in format dict,it is in {type(record)}')
+            raise Exception(f'The entered DATA records is not in format dict,it is in {type(record)}')
     except Exception as err:
         print(err)
+    log.info(f'{record["mobile"]} --> create_new_record function ended...')
 
-    log.info('create_new_record function ended...')
+
+log.info(f'Saved records = {DATA}')
+
 
 # PUT
 def update_record(DATA):
@@ -190,6 +175,7 @@ def read_records():
     print(f'Saved Record = {DATA}')
     log.info(f'Saved Record = {DATA}')
 
+
 def main_program():
     name = input("Enter the name of user :-")
     log.info(f"Entered name of user is = {name}")
@@ -209,14 +195,18 @@ def main_program():
     while True:
         if name in ADMINS:
             options = int(input(
-            f"Which Operation you need to perform \n1)Create User \n2)Create New_record \n3)Update Record \n4)Partially Update Record \n5)Delete Record \n6)Read Records \n7)Exit \n Choose from above option:- "))
+                f"Which Operation you need to perform \n1)Create User \n2)Create New_record \n3)Update Record \n4)Partially Update Record \n5)Delete Record \n6)Read Records \n7)Exit \n Choose from above option:- "))
             if options == 1:
                 log.info(f'Entered Option=1 "Create User"')
                 create_user(name)
-                send_email([members for members in receivers],CREATE_USER)  
+                send_email([members for members in receivers], CREATE_USER)
             elif options == 2:
                 log.info(f'Entered Option=2 "Create New_record"')
-                create_new_record()
+                print(create_new_record(
+                    {"mobile": 454234234245, "name": "kumar", "gender": "M", "dob": "2001-3-2", "company": "KXN"}))
+                print(create_new_record(
+                {"mobile": 919063251336, "name": "Kajal", "gender": "F", "dob": "2001-2-2", "company": "APD"}))
+
                 send_email([members for members in receivers], CREATE_USER)
             elif options == 3:
                 log.info(f'Entered Option=3 "Update Record"')
@@ -243,34 +233,24 @@ def main_program():
                 print(f"Choosed wrong option ={options}")
                 options = int(input(
                 f"Which Operation you need to perform \n1)create_user \n2)create_new_record \n3)update_record \n4)partial_update_record \n5)delete_record \n6)read_records 7)Exit \n Choose from above option:- "))
-
         elif name in USERS:
             options = int(input(
-            f'Which operation need to perform \n1)Create User \n2)Create New Record \n3)Udpdate Record \n4)Read Records \n5)Exit \n Choose from above options :- '))
+            f'Which operation need to perform \n1)Create User \n2)Read Records \n3)Exit \n Choose from above options :- '))
             if options == 1:
                 log.info(f'Entered Option=1 "Create User"')
                 create_user(name)
             elif options == 2:
-                log.info(f'Entered Option=2 "Create New_record"')
-                create_new_record()
-                send_email([members for members in receivers], CREATE_USER)
-            elif option == 3:
-                log.info(f'Entered Option=3 "Update Record"')
-                print("Updated Records are=", update_record(DATA))
-                send_email([members for members in receivers], UPDATE_MESSAGE)
-            elif options == 4:
-                log.info(f'Entered Option=4 "Read Record"')
+                log.info(f'Entered Option=2 "Read Record"')
                 send_email([members for members in receivers], GET_ALL_MESSAGE)
                 read_records()
-            elif options == 5:
+            elif options == 3:
                 log.info(f'Entered Option=3 "Exited"')
                 break
             else:
                 log.info(f'Entered wrong option={options}')
                 print(f'Choosed wrong option ={options}')
                 options = int(input(
-                f'Which operation need to perform \n1)create_user 2)read_records 3)Exit \n Choose from above options :- '))
-
+                    f'Which operation need to perform \n1)create_user 2)read_records 3)Exit \n Choose from above options :- '))
 
 run_program = True
 
